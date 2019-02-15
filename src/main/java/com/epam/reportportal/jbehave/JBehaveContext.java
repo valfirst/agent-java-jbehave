@@ -40,6 +40,7 @@ public class JBehaveContext {
     };
 
     private static Deque<Maybe<String>> itemsCache = new LinkedList<>();
+    private static Deque<Maybe<String>> stepsCache = new LinkedList<>();
 
     public static Story getCurrentStory() {
         return currentStory.get();
@@ -50,7 +51,9 @@ public class JBehaveContext {
     }
 
     public static Deque<Maybe<String>> getItemsCache() {
-        return itemsCache;
+        Deque<Maybe<String>> merged = new LinkedList<>(stepsCache);
+        merged.addAll(itemsCache);
+        return merged;
     }
 
     public static class Story {
@@ -87,11 +90,11 @@ public class JBehaveContext {
          */
         public void setCurrentStep(Maybe<String> currentStep) {
             if (null != currentStep) {
-                itemsCache.push(currentStep);
+                stepsCache.push(currentStep);
             } else {
-                itemsCache.remove(this.currentStep);
+                stepsCache.remove(this.currentStep);
             }
-            this.currentStep = currentStep;
+            this.currentStep = stepsCache.peek();
         }
 
         public void setCurrentStoryId(Maybe<String> currentStoryId) {
