@@ -24,6 +24,7 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * JBehave test execution context
@@ -39,8 +40,8 @@ public class JBehaveContext {
         }
     };
 
-    private static Deque<Maybe<String>> itemsCache = new LinkedList<>();
-    private static Deque<Maybe<String>> stepsCache = new LinkedList<>();
+    private static Map<Story, Deque<Maybe<String>>> itemsCache = new ConcurrentHashMap<>();
+    private static Map<Story, Deque<Maybe<String>>> stepsCache = new ConcurrentHashMap<>();
 
     public static Story getCurrentStory() {
         return currentStory.get();
@@ -51,9 +52,27 @@ public class JBehaveContext {
     }
 
     public static Deque<Maybe<String>> getItemsCache() {
-        Deque<Maybe<String>> merged = new LinkedList<>(stepsCache);
-        merged.addAll(itemsCache);
+        Deque<Maybe<String>> merged = new LinkedList<>();
+        merged.addAll(mergeMapValues(stepsCache));
+        merged.addAll(mergeMapValues(itemsCache));
         return merged;
+    }
+
+    private static Deque<Maybe<String>> mergeMapValues(Map<Story, Deque<Maybe<String>>> map) {
+        Deque<Maybe<String>> merged = new LinkedList<>();
+        for (Deque<Maybe<String>> value : map.values()) {
+            merged.addAll(value);
+        }
+        return merged;
+    }
+
+    private static Deque<Maybe<String>> getEntryFrom(Map<Story, Deque<Maybe<String>>> cache, Story story) {
+        Deque<Maybe<String>> entry = cache.get(story);
+        if (entry == null) {
+            entry = new LinkedList<>();
+            cache.put(story, entry);
+        }
+        return entry;
     }
 
     public static class Story {
@@ -89,19 +108,21 @@ public class JBehaveContext {
          * @param currentStep the currentStep to set
          */
         public void setCurrentStep(Maybe<String> currentStep) {
+            Deque<Maybe<String>> cacheEntry = getEntryFrom(stepsCache, this);
             if (null != currentStep) {
-                stepsCache.push(currentStep);
+                cacheEntry.push(currentStep);
             } else {
-                stepsCache.remove(this.currentStep);
+                cacheEntry.remove(this.currentStep);
             }
-            this.currentStep = stepsCache.peek();
+            this.currentStep = cacheEntry.peek();
         }
 
         public void setCurrentStoryId(Maybe<String> currentStoryId) {
+            Deque<Maybe<String>> cacheEntry = getEntryFrom(itemsCache, this);
             if (null != currentStoryId) {
-                itemsCache.push(currentStoryId);
+                cacheEntry.push(currentStoryId);
             } else {
-                itemsCache.remove(this.currentStoryId);
+                cacheEntry.remove(this.currentStoryId);
             }
             this.currentStoryId = currentStoryId;
         }
@@ -121,10 +142,11 @@ public class JBehaveContext {
          * @param currentScenario the currentScenario to set
          */
         public void setCurrentScenario(Maybe<String> currentScenario) {
+            Deque<Maybe<String>> cacheEntry = getEntryFrom(itemsCache, this);
             if (null != currentScenario) {
-                itemsCache.push(currentScenario);
+                cacheEntry.push(currentScenario);
             } else {
-                itemsCache.remove(this.currentScenario);
+                cacheEntry.remove(this.currentScenario);
             }
             this.currentScenario = currentScenario;
         }
