@@ -82,7 +82,7 @@ public class JBehaveContext {
         private Maybe<String> currentScenario;
 
         private Maybe<String> currentStep;
-        private String currentStepStatus = Statuses.PASSED;
+        private String currentStepStatus;
 
         private Examples examples;
 
