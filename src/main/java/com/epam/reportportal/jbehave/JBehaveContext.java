@@ -15,15 +15,19 @@
  */
 package com.epam.reportportal.jbehave;
 
-import com.epam.reportportal.listeners.Statuses;
+import com.epam.ta.reportportal.ws.model.issue.Issue;
+
 import io.reactivex.Maybe;
 import org.jbehave.core.model.ExamplesTable;
 import org.jbehave.core.model.Meta;
 
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -41,7 +45,7 @@ public class JBehaveContext {
     };
 
     private static Map<Story, Deque<Maybe<String>>> itemsCache = new ConcurrentHashMap<>();
-    private static Map<Story, Deque<Maybe<String>>> stepsCache = new ConcurrentHashMap<>();
+    private static Map<Story, Deque<Step>> stepsCache = new ConcurrentHashMap<>();
 
     public static Story getCurrentStory() {
         return currentStory.get();
@@ -53,7 +57,15 @@ public class JBehaveContext {
 
     public static Deque<Maybe<String>> getItemsCache() {
         Deque<Maybe<String>> merged = new LinkedList<>();
-        merged.addAll(mergeMapValues(stepsCache));
+        Map<Story, Deque<Maybe<String>>> steps = new HashMap<>();
+        for(Entry<Story, Deque<Step>> entry : stepsCache.entrySet()) {
+            Deque<Maybe<String>> stepsDeque = new LinkedList<>();
+            for(Step step : entry.getValue()) {
+                stepsDeque.add(step.getStepId());
+            }
+            steps.put(entry.getKey(), stepsDeque);
+        }
+        merged.addAll(mergeMapValues(steps));
         merged.addAll(mergeMapValues(itemsCache));
         return merged;
     }
@@ -66,8 +78,8 @@ public class JBehaveContext {
         return merged;
     }
 
-    private static Deque<Maybe<String>> getEntryFrom(Map<Story, Deque<Maybe<String>>> cache, Story story) {
-        Deque<Maybe<String>> entry = cache.get(story);
+    private static <T> Deque<T> getEntryFrom(Map<Story, Deque<T>> cache, Story story) {
+        Deque<T> entry = cache.get(story);
         if (entry == null) {
             entry = new LinkedList<>();
             cache.put(story, entry);
@@ -81,8 +93,7 @@ public class JBehaveContext {
 
         private Maybe<String> currentScenario;
 
-        private Maybe<String> currentStep;
-        private String currentStepStatus;
+        private Step currentStep;
 
         private Examples examples;
 
@@ -107,10 +118,10 @@ public class JBehaveContext {
         /**
          * @param currentStep the currentStep to set
          */
-        public void setCurrentStep(Maybe<String> currentStep) {
-            Deque<Maybe<String>> cacheEntry = getEntryFrom(stepsCache, this);
-            if (null != currentStep) {
-                cacheEntry.push(currentStep);
+        public void setCurrentStep(Maybe<String> currentStepId) {
+            Deque<Step> cacheEntry = getEntryFrom(stepsCache, this);
+            if (null != currentStepId) {
+                cacheEntry.push(new Step(currentStepId));
             } else {
                 cacheEntry.remove(this.currentStep);
             }
@@ -154,16 +165,16 @@ public class JBehaveContext {
         /**
          * @return the currentStep
          */
-        public Maybe<String> getCurrentStep() {
+        public Step getCurrentStep() {
             return currentStep;
         }
 
         public String getCurrentStepStatus() {
-            return currentStepStatus;
+            return currentStep.getCurrentStepStatus();
         }
 
         public void setCurrentStepStatus(String currentStepStatus) {
-            this.currentStepStatus = currentStepStatus;
+            this.currentStep.setCurrentStepStatus(currentStepStatus);
         }
 
         public void setExamples(Examples examples) {
@@ -233,6 +244,58 @@ public class JBehaveContext {
             this.currentExample = currentExample;
         }
 
+    }
+
+    public static class Step {
+
+        private final Maybe<String> stepId;
+
+        private Issue issue;
+
+        private String currentStepStatus;
+
+        public Step(Maybe<String> stepId) {
+            this.stepId = stepId;
+        }
+
+        public Maybe<String> getStepId() {
+            return stepId;
+        }
+
+        public Issue getIssue() {
+            return issue;
+        }
+
+        public void setIssue(Issue issue) {
+            this.issue = issue;
+        }
+
+        public String getCurrentStepStatus() {
+            return currentStepStatus;
+        }
+
+        public void setCurrentStepStatus(String currentStepStatus) {
+            this.currentStepStatus = currentStepStatus;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(stepId, issue, currentStepStatus);
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            if (this == object) {
+                return true;
+            }
+            if (object == null || getClass() != object.getClass()) {
+                return false;
+            }
+            Step other = (Step) object;
+            return Objects.equals(getStepId(), other.getStepId())
+                    && Objects.equals(getIssue(), other.getIssue())
+                    && Objects.equals(getCurrentStepStatus(), other.getCurrentStepStatus());
+        }
     }
 
 }
