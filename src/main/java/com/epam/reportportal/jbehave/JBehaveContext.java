@@ -170,11 +170,11 @@ public class JBehaveContext {
         }
 
         public String getCurrentStepStatus() {
-            return currentStep.getCurrentStepStatus();
+            return currentStep.getStepStatus();
         }
 
         public void setCurrentStepStatus(String currentStepStatus) {
-            this.currentStep.setCurrentStepStatus(currentStepStatus);
+            this.currentStep.setStepStatus(currentStepStatus);
         }
 
         public void setExamples(Examples examples) {
@@ -252,7 +252,7 @@ public class JBehaveContext {
 
         private Issue issue;
 
-        private String currentStepStatus;
+        private String stepStatus;
 
         public Step(Maybe<String> stepId) {
             this.stepId = stepId;
@@ -270,17 +270,17 @@ public class JBehaveContext {
             this.issue = issue;
         }
 
-        public String getCurrentStepStatus() {
-            return currentStepStatus;
+        public String getStepStatus() {
+            return stepStatus;
         }
 
-        public void setCurrentStepStatus(String currentStepStatus) {
-            this.currentStepStatus = currentStepStatus;
+        public void setStepStatus(String stepStatus) {
+            this.stepStatus = stepStatus;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(stepId, issue, currentStepStatus);
+            return Objects.hash(stepId, issue, stepStatus);
         }
 
         @Override
@@ -294,7 +294,7 @@ public class JBehaveContext {
             Step other = (Step) object;
             return Objects.equals(getStepId(), other.getStepId())
                     && Objects.equals(getIssue(), other.getIssue())
-                    && Objects.equals(getCurrentStepStatus(), other.getCurrentStepStatus());
+                    && Objects.equals(getStepStatus(), other.getStepStatus());
         }
     }
 
